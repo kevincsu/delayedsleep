@@ -1,11 +1,23 @@
 #!/bin/bash
 
+# Trap ctrl-c.
+function cancelDelayedSleep() {
+	echo -ne "\033[0K\r";
+	echo "Cancelling timer.";
+	exit -2;
+}
+trap cancelDelayedSleep INT
+
+
 # Usage string.
-usage="Usage:\n\tdelayedsleep [seconds]\n\tdelayedsleep [minutes]m";
+usage="Usage:\
+	\n\tdelayedsleep [seconds]\
+	\n\tdelayedsleep [minutes]m\
+	\n\tdelayedsleep [minutes]m [seconds]";
 
 # Check number of arguments.
-# Currently only take 1 argument.
-if [ 1 -ne $# ]; then
+# Currently only take 1 or 2 arguments.
+if [[ 1 -ne $# && 2 -ne $# ]]; then
 	echo -e $usage;
 	exit -1;
 fi
@@ -14,19 +26,49 @@ fi
 secpat='^[0-9]+$'
 minpat='^[0-9]+m$'
 
-# Argument should match seconds or minutes pattern.
+# First argument should match seconds or minutes pattern.
 if ! [[ $1 =~ $secpat || $1 =~ $minpat ]]; then
 	echo -e $usage;
 	exit -1;
 fi
-
-# Set timer to presumed seconds.
-timer=$1;
-
-# If user specified minutes, grab those.
-if [[ $1 =~ $minpat ]]; then
-	timer=$((60 * `echo $1 | sed 's/m//'`));
+# Exactly one of both seconds and minutes pattern if two arguments.
+if [ 2 -eq $# ]; then
+	# Second argument should also match a pattern.
+	if ! [[ $2 =~ $secpat || $2 =~ $minpat ]]; then
+		echo -e $usage;
+		exit -1;
+	fi
+	if [[ $1 =~ $secpat && $2 =~ $secpat ]]; then
+		echo -e $usage;
+		exit -1;
+	fi
+	if [[ $1 =~ $minpat && $2 =~ $minpat ]]; then
+		echo -e $usage;
+		exit -1;
+	fi
 fi
+
+# Add seconds to timer.
+sec=0;
+min=0;
+if [ 1 -eq $# ]; then
+	if [[ $1 =~ $secpat ]]; then
+		sec=$1;
+	else
+		min=`echo $1 | sed 's/m//'`;
+	fi
+else
+	if [[ $1 =~ $secpat ]]; then
+		sec=$1;
+		min=`echo $2 | sed 's/m//'`;
+	else
+		sec=$2;
+		min=`echo $1 | sed 's/m//'`;
+	fi
+fi
+
+# Calculate time.
+timer=$(($sec + 60 * $min));
 
 # Run loop counting down.
 while [ $timer -ge 1 ]; do
@@ -37,4 +79,5 @@ done
 echo -ne "\033[0K";
 
 # Sleep display.
+echo "Sleeping display now.";
 pmset sleepnow;
