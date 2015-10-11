@@ -1,0 +1,21 @@
+#!/bin/bash
+
+if [ 1 -ne $# ]; then
+	echo "Usage: delayedsleep [seconds]";
+	exit -1;
+fi
+re='^[0-9]+$'
+if ! [[ $1 =~ $re ]]; then
+	echo "Error: [seconds] not a number.";
+	echo "Usage: delayedsleep [seconds]";
+	exit -1;
+fi
+
+timer=$1
+while [ $timer -ge 1 ]; do
+	echo -ne "Setting timer for $timer seconds before sleeping...\033[0K\r";
+	sleep 1;
+	timer=$(($timer - 1));
+done
+echo -ne "\033[0K";
+pmset sleepnow;
