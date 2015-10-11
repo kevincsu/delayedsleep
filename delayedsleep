@@ -1,21 +1,40 @@
 #!/bin/bash
 
+# Usage string.
+usage="Usage:\n\tdelayedsleep [seconds]\n\tdelayedsleep [minutes]m";
+
+# Check number of arguments.
+# Currently only take 1 argument.
 if [ 1 -ne $# ]; then
-	echo "Usage: delayedsleep [seconds]";
-	exit -1;
-fi
-re='^[0-9]+$'
-if ! [[ $1 =~ $re ]]; then
-	echo "Error: [seconds] not a number.";
-	echo "Usage: delayedsleep [seconds]";
+	echo -e $usage;
 	exit -1;
 fi
 
-timer=$1
+# Regex patterns.
+secpat='^[0-9]+$'
+minpat='^[0-9]+m$'
+
+# Argument should match seconds or minutes pattern.
+if ! [[ $1 =~ $secpat || $1 =~ $minpat ]]; then
+	echo -e $usage;
+	exit -1;
+fi
+
+# Set timer to presumed seconds.
+timer=$1;
+
+# If user specified minutes, grab those.
+if [[ $1 =~ $minpat ]]; then
+	timer=$((60 * `echo $1 | sed 's/m//'`));
+fi
+
+# Run loop counting down.
 while [ $timer -ge 1 ]; do
 	echo -ne "Setting timer for $timer seconds before sleeping...\033[0K\r";
 	sleep 1;
 	timer=$(($timer - 1));
 done
 echo -ne "\033[0K";
+
+# Sleep display.
 pmset sleepnow;
